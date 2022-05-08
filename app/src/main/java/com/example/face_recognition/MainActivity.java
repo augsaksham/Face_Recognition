@@ -113,7 +113,6 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
         FirebaseApp.initializeApp(this);
 
         takePhotoButton = findViewById(R.id.take_photo);
-        imageView = findViewById(R.id.image_view);
 
         //TODO ask for camera permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -288,7 +287,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
                                     @Override
                                     public void onSuccess(List<Face> faces) {
                                         Log.d("Face Reco"," no face found");
-                                        fg.setText("Found not found");
+                                        fg.setText("Face not found");
                                         takePhotoButton.setVisibility(View.INVISIBLE);
 
                                         Log.d("Face","Shape of list = "+String.valueOf(faces.size()));
@@ -336,7 +335,6 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
 
     private void uploadFile(Bitmap bitmap) {
 
-        imageView.setImageBitmap(bitmap);
 
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference storageRef = storage.getReference();
@@ -352,7 +350,6 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
             @Override
             public void onFailure(@NonNull Exception exception) {
                 // Handle unsuccessful uploads
-                Toast.makeText(MainActivity.this, "Retry "+exception, Toast.LENGTH_SHORT).show();
             }
         }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @RequiresApi(api = Build.VERSION_CODES.O)
