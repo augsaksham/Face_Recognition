@@ -2,6 +2,7 @@ package com.example.face_recognition;
 
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -11,22 +12,35 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.media.Image;
 import android.media.ImageReader;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.face.Face;
 import com.google.mlkit.vision.face.FaceDetection;
@@ -34,18 +48,28 @@ import com.google.mlkit.vision.face.FaceDetector;
 import com.google.mlkit.vision.face.FaceDetectorOptions;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.lang.Math;
+import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity implements ImageReader.OnImageAvailableListener {
+    private static final String TAG = "Image Saved";
     Handler handler;
     private int sensorOrientation;
     private double rot=0.0;
+
 
     // High-accuracy landmark detection and face classification
     FaceDetectorOptions highAccuracyOpts =
@@ -73,11 +97,23 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
     private double relaxation=10.0;
 
 
+    private FloatingActionButton takePhotoButton;
+    private InputImage image;
+
+    private ImageView imageView;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         handler = new Handler();
+
+
+        FirebaseApp.initializeApp(this);
+
+        takePhotoButton = findViewById(R.id.take_photo);
+        imageView = findViewById(R.id.image_view);
 
         //TODO ask for camera permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -87,6 +123,24 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
             //TODO show live camera footage
             setFragment();
         }
+
+        takePhotoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Log.d("Save","Image url ");
+                uploadFile(rgbFrameBitmap);
+
+            }
+        });
+
+        takePhotoButton.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+
+                return false;
+            }
+        });
     }
 
     @Override
@@ -226,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
         //Do your work here
 
-        InputImage image = InputImage.fromBitmap(rgbFrameBitmap, (int)rot);
+        image = InputImage.fromBitmap(rgbFrameBitmap, (int)rot);
 
             detector.process(image)
                         .addOnSuccessListener(
@@ -235,6 +289,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
                                     public void onSuccess(List<Face> faces) {
                                         Log.d("Face Reco"," no face found");
                                         fg.setText("Found not found");
+                                        takePhotoButton.setVisibility(View.INVISIBLE);
 
                                         Log.d("Face","Shape of list = "+String.valueOf(faces.size()));
 
@@ -242,8 +297,8 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
                                             // found a face
 
                                             Log.d("Face Reco","face found");
+                                            takePhotoButton.setVisibility(View.VISIBLE);
                                             int rn=(int)Math.random()*100000;
-                                            saveToInternalStorage(rgbFrameBitmap,String.valueOf(rn));
                                             fg.setText("Found Face");
 
 
@@ -278,30 +333,49 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
         }
     }
 
-    private String saveToInternalStorage(Bitmap bitmapImage,String image_name){
-        ContextWrapper cw = new ContextWrapper(getApplicationContext());
-        // path to /data/data/yourapp/app_data/imageDir
-        File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
-        // Create imageDir
-        File mypath=new File(directory,image_name+"jpg");
 
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(mypath);
-            // Use the compress method on the BitMap object to write image to the OutputStream
-            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                fos.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+    private void uploadFile(Bitmap bitmap) {
+
+        imageView.setImageBitmap(bitmap);
+
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageRef = storage.getReference();
+        StorageReference imageReferece = storageRef.child("images/" + Math.random()*1000000 + ".jpg");
+
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+        byte[] data = baos.toByteArray();
+        UploadTask uploadTask = imageReferece.putBytes(data);
+
+        uploadTask.addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                // Handle unsuccessful uploads
+                Toast.makeText(MainActivity.this, "Retry "+exception, Toast.LENGTH_SHORT).show();
             }
-        }
-        return directory.getAbsolutePath();
-    }
+        }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                // taskSnapshot.getMetadata() contains file metadata such as size, content-type, and download URL.
+                Task<Uri> downloadUrl = imageReferece.getDownloadUrl();
+                DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference().child("images").push();
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", databaseReference.getKey());
+                map.put("image", downloadUrl.getResult().toString());
+                map.put("date", LocalDate.now().toString());
+                map.put("time", LocalTime.now().toString());
 
+                Toast.makeText(MainActivity.this, "Image Saved", Toast.LENGTH_SHORT).show();
+
+                databaseReference.setValue(map);
+                Log.d("downloadUrl-->", "" + downloadUrl);
+
+            }
+        });
+
+    }
 
 
 }
