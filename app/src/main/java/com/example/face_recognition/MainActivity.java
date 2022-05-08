@@ -371,6 +371,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
 
                 databaseReference.setValue(map);
                 Log.d("downloadUrl-->", "" + downloadUrl);
+                
             }
         });
 
