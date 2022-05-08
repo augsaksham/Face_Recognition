@@ -287,7 +287,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
                                     @Override
                                     public void onSuccess(List<Face> faces) {
                                         Log.d("Face Reco"," no face found");
-                                        fg.setText("Found not found");
+                                        fg.setText("Face not found");
                                         takePhotoButton.setVisibility(View.INVISIBLE);
 
                                         Log.d("Face","Shape of list = "+String.valueOf(faces.size()));
