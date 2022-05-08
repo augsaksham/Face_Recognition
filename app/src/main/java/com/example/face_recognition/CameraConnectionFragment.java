@@ -45,6 +45,8 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,6 +65,12 @@ import java.util.concurrent.TimeUnit;
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 @SuppressWarnings("FragmentNotInstantiable")
 public class CameraConnectionFragment extends Fragment implements View.OnClickListener {
+
+
+    void setText(String text){
+        TextView tv=getView().findViewById(R.id.facedetect);
+        tv.setText(text);
+    }
 
 
     /**
@@ -264,8 +272,6 @@ public class CameraConnectionFragment extends Fragment implements View.OnClickLi
     @Override
     public View onCreateView( LayoutInflater inflater,  ViewGroup container,  Bundle savedInstanceState) {
         View view = inflater.inflate(layout, container, false);
-        Button btn = view.findViewById(R.id.camface);
-        btn.setOnClickListener(this);
 
         return view;
     }
@@ -549,13 +555,6 @@ public class CameraConnectionFragment extends Fragment implements View.OnClickLi
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()){
-            case R.id.camface:
-                Log.d("OnClick","onclick called");
-                this.cameraId=String.valueOf(1);
-                cameraId=String.valueOf(1);
-                openCamera(textureView.getWidth(), textureView.getHeight());
-        }
 
     }
 

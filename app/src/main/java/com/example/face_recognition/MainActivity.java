@@ -8,6 +8,7 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.hardware.camera2.CameraAccessException;
@@ -33,6 +34,9 @@ import com.google.mlkit.vision.face.FaceDetector;
 import com.google.mlkit.vision.face.FaceDetectorOptions;
 
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.lang.Math;
@@ -61,6 +65,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
     private Runnable postInferenceCallback;
     private double angle;
     private String state;
+    private CameraConnectionFragment fg;
     private Runnable imageConverter;
     private Bitmap rgbFrameBitmap;
     private String stage="Start";
@@ -130,6 +135,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
 
         camera2Fragment.setCamera(cameraId);
         fragment = camera2Fragment;
+        fg=camera2Fragment;
 
         getFragmentManager().beginTransaction().replace(R.id.container, fragment).commit();
     }
@@ -228,12 +234,19 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
                                     @Override
                                     public void onSuccess(List<Face> faces) {
                                         Log.d("Face Reco"," no face found");
+                                        fg.setText("Found not found");
 
                                         Log.d("Face","Shape of list = "+String.valueOf(faces.size()));
 
                                         if(faces.size()>0){
                                             // found a face
+
                                             Log.d("Face Reco","face found");
+                                            int rn=(int)Math.random()*100000;
+                                            saveToInternalStorage(rgbFrameBitmap,String.valueOf(rn));
+                                            fg.setText("Found Face");
+
+
                                         }
 
 
@@ -264,5 +277,31 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
             buffer.get(yuvBytes[i]);
         }
     }
+
+    private String saveToInternalStorage(Bitmap bitmapImage,String image_name){
+        ContextWrapper cw = new ContextWrapper(getApplicationContext());
+        // path to /data/data/yourapp/app_data/imageDir
+        File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
+        // Create imageDir
+        File mypath=new File(directory,image_name+"jpg");
+
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(mypath);
+            // Use the compress method on the BitMap object to write image to the OutputStream
+            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return directory.getAbsolutePath();
+    }
+
+
 
 }
