@@ -51,13 +51,8 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
                     .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
                     .build();
 
-    // Real-time contour detection
-    FaceDetectorOptions realTimeOpts =
-            new FaceDetectorOptions.Builder()
-                    .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
-                    .build();
 
-    FaceDetector detector = FaceDetection.getClient();
+    FaceDetector detector = FaceDetection.getClient(highAccuracyOpts);
 
     private boolean isProcessingFrame = false;
     private byte[][] yuvBytes = new byte[3][];
@@ -109,7 +104,8 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
         String cameraId = null;
         try {
             cameraId = manager.getCameraIdList()[0];
-            int rot=manager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_ORIENTATION);
+            rot=manager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_ORIENTATION);
+            cameraId=String.valueOf(1);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -123,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
                             public void onPreviewSizeChosen(final Size size, final int rotation) {
                                 previewHeight = size.getHeight();
                                 previewWidth = size.getWidth();
-                                rot = (rot - getScreenOrientation()+360)%360;
+                                rot = (rotation + getScreenOrientation());
                                 Log.d("Pose Angle ","Pose angle is "+String.valueOf(rot));
 
                             }
@@ -218,6 +214,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
     }
 
     private void processImage() {
+        Log.d("Image","In Image Process");
         imageConverter.run();
         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
@@ -225,16 +222,18 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
 
         InputImage image = InputImage.fromBitmap(rgbFrameBitmap, (int)rot);
 
-        Task<List<Face>> result =
-                detector.process(image)
+            detector.process(image)
                         .addOnSuccessListener(
                                 new OnSuccessListener<List<Face>>() {
                                     @Override
                                     public void onSuccess(List<Face> faces) {
-                                        
+                                        Log.d("Face Reco"," no face found");
+
+                                        Log.d("Face","Shape of list = "+String.valueOf(faces.size()));
+
                                         if(faces.size()>0){
                                             // found a face
-                                            Log.d("Face","face found");
+                                            Log.d("Face Reco","face found");
                                         }
 
 
@@ -245,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements ImageReader.OnIma
                                     @Override
                                     public void onFailure(@NonNull Exception e) {
                                         // Task failed with an exception
+                                        Log.d("Face Reco","face not found");
                                         // ...
                                     }
                                 });

@@ -267,12 +267,6 @@ public class CameraConnectionFragment extends Fragment implements View.OnClickLi
         Button btn = view.findViewById(R.id.camface);
         btn.setOnClickListener(this);
 
-        TextView tv_state=view.findViewById(R.id.status);
-        TextView tv_angle=view.findViewById(R.id.angle);
-
-        tv_angle.setText(String.valueOf(angle));
-        tv_state.setText(state);
-
         return view;
     }
 
@@ -395,7 +389,7 @@ public class CameraConnectionFragment extends Fragment implements View.OnClickLi
                 // for ActivityCompat#requestPermissions for more details.
                 return;
             }
-            manager.openCamera(cameraIdBack, stateCallback, backgroundHandler);
+            manager.openCamera(cameraIdFront, stateCallback, backgroundHandler);
         } catch ( CameraAccessException e) {
             Log.d("Camera",e.getMessage());
         } catch ( InterruptedException e) {
